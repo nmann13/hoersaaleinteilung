@@ -199,7 +199,7 @@ def start_workflow(b):
             #output.clear_output() 
             print("Bitte mindestens einen Hörsaal wählen.")
         #return None
-    #Reicht Kapazität der gewählten Hörsäle?
+    
     if len(students) > sum(selected_lecture_halls.values()):
         with output:
             print(f"⚠️ Kapazität der gewählten Hörsäle nicht ausreichend")
@@ -239,10 +239,7 @@ class WorkFlow:
         hall_col = [hall for hall, number in self.halls.items() for _ in range(number) ]
         self.df_students["halls"] = hall_col[:len(self.df_students.index)]
         self.df_students = self.df_students.sort_values(by = ["halls", "Nachname"])
-        #with output:
-         #   print(self.df_students[["Nachname", "Vorname", "Matrikelnummer","Versuch","halls"]])
-
-    
+ 
     def add_hall_tex(self, tex_text, hall, df):
         
         tex_text +=f"""\\noindent
@@ -285,7 +282,6 @@ class WorkFlow:
         \endlastfoot
         """
         
-        # Hier wird für jede Zeile aus dem DataFrame eine Tabellenzeile in LaTeX erzeugt
         for i, (_, row) in enumerate(df.iterrows()):
             Matrikelnummer = row["Matrikelnummer"]
             Vorname = row["Vorname"]
