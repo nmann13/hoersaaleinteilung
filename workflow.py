@@ -5,6 +5,7 @@ import pandas as pd
 import json
 import io
 import chardet
+import time
 
 # -------------------
 #  Benötigten Daten einlesen 
@@ -13,7 +14,7 @@ import chardet
 with open("data/subjects_mod.json", "r", encoding="utf-8") as file:
     subjects_dict = json.load(file)
 
-with open("data/halls.json", "r", encoding="utf-8") as file:
+with open("data/halls_extended.json", "r", encoding="utf-8") as file:
     halls_dict = json.load(file)
 
 # -------------------
@@ -164,13 +165,18 @@ for i, (name, max_kapazitaet) in enumerate(halls_dict.items()):
     halls_widgets.append(( check_box, kapazitaet_field))
 
 n_halls = len(halls_widgets)
+
+column1_end = math.ceil(n_halls / 3)
+column2_end = 2 * math.ceil(n_halls / 3)
+
 columns = [
-    widgets.VBox([widgets.HBox(w) for w in halls_widgets[:math.ceil(n_halls / 2)]]),
-    widgets.VBox([widgets.HBox(w) for w in halls_widgets[math.ceil(n_halls / 2):]])
+    widgets.VBox([widgets.HBox(w) for w in halls_widgets[:column1_end]]),
+    widgets.VBox([widgets.HBox(w) for w in halls_widgets[column1_end:column2_end]]),
+    widgets.VBox([widgets.HBox(w) for w in halls_widgets[column2_end:]])
 ]
 
 grid = widgets.HBox(columns)
-  
+
 # -------------------
 #  Workflow starten
 #--------------------
@@ -255,26 +261,46 @@ class WorkFlow:
         \\vspace{{1cm}}
         \\noindent
         \\parbox{{5cm}}{{\\textbf{{Teilnehmer:}}}}        \\rule{{.4\\textwidth}}{{0.4pt}}
-    
-               \\begin{{table}}[h]
-            \\centering
-            \\begin{{tabular}}{{|l|l|p{{3cm}}|l|l|l|p{{4cm}}|}}
-                \\hline
-                Nr & Nachname & Vorname & Matrikel-Nr. & Versuch & anwesend & Bemerkung  \\\\ \\hline\\hline
-                """
-       
+        """
+
+        tex_text +=r"""
+        {\small
+        \begin{center}
+        \begin{longtable}{|l|p{3cm}|p{3cm}|l|l|l|p{4cm}|}
+        \hline
+        Nr & Nachname & Vorname & Matrikel-Nr. & Versuch & anwesend & Bemerkung \\
+        \hline\hline
+        \endfirsthead
+        
+        \hline
+        Nr & Nachname & Vorname & Matrikel-Nr. & Versuch & anwesend & Bemerkung \\
+        \hline\hline
+        \endhead
+        
+        \hline
+        \multicolumn{7}{r}{\emph{Fortsetzung auf der nächsten Seite}} \\
+        \endfoot
+        
+        \hline
+        \endlastfoot
+        """
+        
+        # Hier wird für jede Zeile aus dem DataFrame eine Tabellenzeile in LaTeX erzeugt
         for i, (_, row) in enumerate(df.iterrows()):
             Matrikelnummer = row["Matrikelnummer"]
             Vorname = row["Vorname"]
             Nachname = row["Nachname"]
             Versuch = row["Versuch"]
-            tex_text += f"""
-            {i+1}  & {Nachname} & {Vorname} & {Matrikelnummer} & {Versuch} & & \\\\ \\hline"""
-    
-        tex_text += """
-            \\end{tabular}
-        \\end{table}
-        \\clearpage"""
+        
+            tex_text += f"{i+1} & {Nachname} & {Vorname} & {Matrikelnummer} & {Versuch} & & \\\\ \\hline\n"
+
+        tex_text += r"""\end{longtable}
+        \end{center}
+        }
+        \clearpage
+        
+        """
+       
         return tex_text
 
 
@@ -282,6 +308,7 @@ class WorkFlow:
         tex_text = """\\documentclass{article}
                     \\usepackage[a4paper, margin=2cm]{geometry}
                     \\usepackage{booktabs}
+                    \\usepackage{longtable}
                     \\begin{document}
                     """
         df = self.df_students
@@ -291,17 +318,23 @@ class WorkFlow:
         # Einteilung
 
         for _  in set(df["halls"]):
-            tex_text += """
-                \\begin{tabular}{|l|l|l|}
-                    \\hline
-                    Von & Bis & Raum \\\\ \\hline\\hline
+            tex_text += rf"""
+                    \begin{{center}}
+                    \vspace{{1cm}}
+                    \Huge
+                    \textbf{{Prüfung: }} {self.subject}\\
+                    \vspace{{1cm}}
+                    \begin{{tabular}}{{|l|l|l|}}
+                    \hline
+                    Von & Bis & Raum \\ \hline\hline
                 """
             for hall in set(df["halls"]):
                  tex_text += f"""{min(df[df["halls"]==hall]["Matrikelnummer"])}
                      &{max(df[df["halls"]==hall]["Matrikelnummer"])}
                      &{hall}\\\\\\hline"""
-            tex_text += """ \\end{tabular} 
-                     \\vspace{1cm}
+            tex_text += """ \\end{tabular}
+                    \\end{center}
+                     \\clearpage
                      
             """
         tex_text += """\\end{document}"""
@@ -311,6 +344,8 @@ class WorkFlow:
         with output:
             output.clear_output() 
             print(f"Es wurde eine Tex-File {self.filename} erstellt.")   
+            time.sleep(3)
+            print("Neustart mit den zwei kleinen Dreiecken in der Menüleiste.")
         return None
 
 # -------------------
