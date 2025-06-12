@@ -127,9 +127,11 @@ def update_gesamt_kapazitaet():
         halls_widgets[i][0].name: halls_widgets[i][1].value
         for i in range(len(halls_widgets)) if halls_widgets[i][0].value
     }
-    with output:
-        print("Studierende:",len(students)," Aktuelle Kapazität:", sum(selected_lecture_halls_temp.values()))
-        
+    if 'students' in globals():
+        with output:
+            print("Studierende:",len(students)," Aktuelle Kapazität:", sum(selected_lecture_halls_temp.values()))
+   
+             
 def update_value(change):
     index = change.owner.index
     if change.new:
