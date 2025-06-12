@@ -218,14 +218,14 @@ def start_workflow(b):
 
     if not date.value:
         with output:
-            #output.clear_output() 
+            output.clear_output() 
             print("Bitte ein Datum wählen.")
-            
+        return None   
     if not student_uploader.value:
         with output:
-           # output.clear_output() 
+            output.clear_output() 
             print("Bitte eine csv-Datei mit Studierenden hochladen.")
-        #return None
+        return None
     # Hörsaalliste verarbeiten
     selected_lecture_halls  = {
         halls_widgets[i][0].name: halls_widgets[i][1].value
