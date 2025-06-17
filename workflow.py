@@ -39,9 +39,10 @@ student_uploader = widgets.FileUpload(accept='.csv', multiple=True, description 
 df_files = []
 subject= None
 wrong_files = {}
+file_names = []
 
 def handle_upload(change):
-    global df_files,students, subject, subject_pnr, wrong_files, demand
+    global df_files,students, subject, subject_pnr, wrong_files, demand, file_names
     if not date.value:
         with output:
             #output.clear_output() 
@@ -61,14 +62,19 @@ def handle_upload(change):
                 subject = subject_act
                 subject_pnr = pnr
                 df_files.append(df)
+                file_names.append(filename)
                 with output:
                     print("Hörsaaleinteilung zur Prüfung",subject,"am",date.value.strftime("%d.%m.%Y"))
                     print(f"Die Datei {filename} enthält {len(df)} Studierende")
                 
             elif subject_act != subject:
-                wrong_files[filename]=(subject,pnr)
+                wrong_files[filename]="Fach passt nicht zur gesetzten Prüfung"
+            elif filename in file_names:
+                wrong_files[filename]="Datei bereits hochgeladen"
+                
             else:
                 df_files.append(df)
+                file_names.append(filename)
                 with output:
                     print(f"Die Datei {filename} enthält {len(df)} Studierende")
                   
@@ -81,8 +87,10 @@ def handle_upload(change):
 
     if wrong_files:
         with output:
-            #print("Anzahl nicht ⚠️ eingelesener Dateien:",len(wrong_files))
-            print("⚠️ Nicht eingelesen:",list(wrong_files.keys()), "Grund: Fach passt nicht zur gesetzten Prüfung")
+            print("⚠️ Nicht eingelesen:")
+            for file in wrong_files:
+                with output:
+                    print(file,"Grund:",wrong_files.get(file))
               
     demand = sum(len(df) for df in df_files)
     with output:
@@ -159,7 +167,7 @@ def make_capacity_observer(initial_value, int_field, name):
                 print(f"Standardkapazität: {initial_value}, Eingabe: {new_val}")
                 
                 question = widgets.Label("Möchten Sie die Kapazität überschreiten?")
-                buttons = widgets.ToggleButtons(options=['Ja', 'Nein'])
+                buttons = widgets.ToggleButtons(options=['Ja', 'Nein'],value = None)
 
                 def handle_decision(decision_change):
                     if decision_change['new'] == 'Nein':
@@ -269,7 +277,6 @@ class WorkFlow:
         self.number = number
         self.helper = helper
         self.df_students = df_students
-        #self.remap_columns()
         self.halls = halls 
         self.filename = "Hörsaalbelegung_"  + str(self.subject_abb) + "_" + str(self.year) + "_" + str(self.month) + ".tex"
         self.sort_halls()
@@ -372,9 +379,11 @@ class WorkFlow:
                     \hline
                     Von & Bis & Raum \\ \hline\hline
                 """
-            for hall in set(df["halls"]):
-                 tex_text += f"""{min(df[df["halls"]==hall]["Matrikelnummer"])}
-                     &{max(df[df["halls"]==hall]["Matrikelnummer"])}
+            min_matrikel = df.groupby("halls")["Matrikelnummer"].transform("min")
+            df_sorted = df.assign(min_matrikel=min_matrikel).sort_values("min_matrikel").drop(columns="min_matrikel")
+            for hall in df_sorted["halls"].unique():
+                 tex_text += f"""{min(df_sorted[df_sorted["halls"]==hall]["Matrikelnummer"])}
+                     &{max(df_sorted[df_sorted["halls"]==hall]["Matrikelnummer"])}
                      &{hall}\\\\\\hline"""
             tex_text += """ \\end{tabular}
                     \\end{center}
