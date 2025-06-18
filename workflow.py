@@ -362,8 +362,10 @@ class WorkFlow:
                     \\begin{document}
                     """
         df = self.df_students
-        for hall  in set(df["halls"]):
-            tex_text = self.add_hall_tex(tex_text, hall,  df[df['halls']==hall]) 
+        min_matrikel = df.groupby("halls")["Matrikelnummer"].transform("min")
+        df_s = df.assign(min_matrikel=min_matrikel).sort_values("min_matrikel").drop(columns="min_matrikel")
+        for hall in df_s["halls"].unique():
+            tex_text = self.add_hall_tex(tex_text, hall,  df_s[df_s['halls']==hall]) 
 
         # Einteilung
 
@@ -379,11 +381,10 @@ class WorkFlow:
                     \hline
                     Von & Bis & Raum \\ \hline\hline
                 """
-            min_matrikel = df.groupby("halls")["Matrikelnummer"].transform("min")
-            df_sorted = df.assign(min_matrikel=min_matrikel).sort_values("min_matrikel").drop(columns="min_matrikel")
-            for hall in df_sorted["halls"].unique():
-                 tex_text += f"""{min(df_sorted[df_sorted["halls"]==hall]["Matrikelnummer"])}
-                     &{max(df_sorted[df_sorted["halls"]==hall]["Matrikelnummer"])}
+            
+            for hall in df_s["halls"].unique():
+                 tex_text += f"""{min(df_s[df_s["halls"]==hall]["Matrikelnummer"])}
+                     &{max(df_s[df_s["halls"]==hall]["Matrikelnummer"])}
                      &{hall}\\\\\\hline"""
             tex_text += """ \\end{tabular}
                     \\end{center}
