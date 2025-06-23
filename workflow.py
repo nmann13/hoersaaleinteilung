@@ -363,7 +363,10 @@ class WorkFlow:
                     """
         df = self.df_students
         min_matrikel = df.groupby("halls")["Matrikelnummer"].transform("min")
-        df_s = df.assign(min_matrikel=min_matrikel).sort_values("min_matrikel").drop(columns="min_matrikel")
+        df_s = (df.assign(min_matrikel=min_matrikel).
+                sort_values(by=["min_matrikel","Nachname"]).drop(columns="min_matrikel")
+               )
+       
         for hall in df_s["halls"].unique():
             tex_text = self.add_hall_tex(tex_text, hall,  df_s[df_s['halls']==hall]) 
 
